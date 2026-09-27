@@ -250,17 +250,43 @@
   .mentor{background:var(--bg)}
   .mentor-grid{display:grid;grid-template-columns:.9fr 1.1fr;gap:clamp(30px,5vw,70px);align-items:center}
   @media (max-width:900px){.mentor-grid{grid-template-columns:1fr}}
-  .mentor-figure{position:relative}
-  .mentor-figure img{border-radius:var(--radius);border:1px solid rgba(217,179,92,.35);box-shadow:0 30px 80px rgba(0,0,0,.6),0 0 60px rgba(217,179,92,.12)}
+  .mentor-figure{position:relative;perspective:1400px}
   .mentor-figure::before{
     content:"";position:absolute;inset:-14px;border-radius:26px;border:1px solid rgba(217,179,92,.18);pointer-events:none;
   }
-  .mentor-figure figcaption{
+  /* двусторонняя карточка */
+  .flip{position:relative;transform-style:preserve-3d;transition:transform .9s cubic-bezier(.2,.75,.2,1);will-change:transform;outline:none;user-select:none;-webkit-user-select:none;-webkit-tap-highlight-color:transparent}
+  .flip.arming{transition:transform .35s ease}
+  .flip[data-edge]{cursor:pointer}
+  .flip:focus-visible{box-shadow:0 0 0 3px rgba(241,212,138,.6);border-radius:var(--radius)}
+  .face{position:relative;border-radius:var(--radius);overflow:hidden;backface-visibility:hidden;-webkit-backface-visibility:hidden;
+        box-shadow:0 30px 80px rgba(0,0,0,.6),0 0 60px rgba(217,179,92,.12);transform:translateZ(0)}
+  .face.back{position:absolute;inset:0;transform:rotateY(180deg)}
+  .face img{width:100%;height:100%;object-fit:cover;border-radius:var(--radius);border:1px solid rgba(217,179,92,.35);pointer-events:none}
+  .face .cap{
     position:absolute;left:18px;bottom:18px;right:18px;
     background:rgba(11,13,16,.78);backdrop-filter:blur(10px);border:1px solid var(--line-strong);border-radius:14px;
     padding:12px 16px;font-size:13px;color:var(--muted);display:flex;align-items:center;justify-content:space-between;gap:10px
   }
-  .mentor-figure figcaption b{color:var(--gold-2);font-family:var(--font-display);font-size:16px}
+  .face .cap b{color:var(--gold-2);font-family:var(--font-display);font-size:16px}
+  .face.back .cap{border-color:rgba(217,179,92,.45)}
+  .face.back .cap .status{color:var(--gold-2);font-weight:600}
+  /* подсветка края, за который «берутся» */
+  .glow{position:absolute;inset:0;border-radius:var(--radius);pointer-events:none;opacity:0;transition:opacity .25s}
+  .flip.arming .glow{opacity:1}
+  .flip[data-edge="left"]  .front .glow,.flip[data-edge="right"] .back .glow{background:linear-gradient(90deg,rgba(241,212,138,.45),rgba(241,212,138,0) 30%)}
+  .flip[data-edge="right"] .front .glow,.flip[data-edge="left"]  .back .glow{background:linear-gradient(270deg,rgba(241,212,138,.45),rgba(241,212,138,0) 30%)}
+  .flip[data-edge="top"]    .glow{background:linear-gradient(180deg,rgba(241,212,138,.45),rgba(241,212,138,0) 30%)}
+  .flip[data-edge="bottom"] .glow{background:linear-gradient(0deg,rgba(241,212,138,.45),rgba(241,212,138,0) 30%)}
+  /* подсказка — вне 3D, чтобы не зеркалилась */
+  .flip-hint{
+    position:absolute;top:16px;left:50%;transform:translateX(-50%) translateY(-6px);z-index:2;pointer-events:none;
+    font-size:12px;letter-spacing:.06em;color:var(--gold-2);background:rgba(11,13,16,.82);border:1px solid rgba(217,179,92,.45);
+    border-radius:999px;padding:7px 12px;white-space:nowrap;opacity:0;transition:opacity .25s,transform .25s;
+  }
+  .mentor-figure.arming .flip-hint{opacity:1;transform:translateX(-50%) translateY(0)}
+  @media (hover:none){.flip-hint{opacity:1;transform:translateX(-50%)}}
+  @media (prefers-reduced-motion:reduce){.flip,.flip.arming{transition-duration:.01s}}
   .mentor h2{margin-bottom:18px}
   .mentor h2 span{color:var(--gold-2)}
   .mentor .lead{margin-bottom:26px}
@@ -393,8 +419,8 @@
       <a href="#tiers">Ступени</a>
       <a href="#mentor">Наставник</a>
       <a href="#hotline">Горячая линия</a>
-      <a href="#faq">FAQ</a>
-      <a href="#join" class="btn btn-gold">Записаться</a>
+      <a href="#schedule">Ивенты</a><a href="#enroll">Запись</a>
+      <a href="#enroll" class="btn btn-gold">Записаться</a>
     </nav>
   </div>
 </header>
@@ -533,9 +559,20 @@
 <section class="section mentor" id="mentor">
   <div class="container">
     <div class="mentor-grid">
-      <figure class="mentor-figure reveal">
-        <img src="may.jpg" alt="Портрет May в стиле иконы: чумная маска, золотой нимб, чашка чая и крыса на плече">
-        <figcaption><span><b>May</b><br>Богиня Альянса</span><span>☕ чай: остыл</span></figcaption>
+      <figure class="mentor-figure reveal" id="mayFigure">
+        <span class="flip-hint" aria-hidden="true">↻ нажми на край — перевернётся</span>
+        <div class="flip" id="mayFlip" role="button" tabindex="0" aria-pressed="false" aria-label="Перевернуть портрет May">
+          <div class="face front">
+            <img src="may.jpg" alt="Портрет May в стиле иконы: чумная маска, золотой нимб, чашка чая и крыса на плече">
+            <span class="glow" aria-hidden="true"></span>
+            <div class="cap"><span><b>May</b><br>Богиня Альянса</span><span class="status">☕ чай: остыл</span></div>
+          </div>
+          <div class="face back" aria-hidden="true">
+            <img src="may-back.jpg" alt="May на Королеве: не беспокоить">
+            <span class="glow" aria-hidden="true"></span>
+            <div class="cap"><span><b>May</b><br>Богиня Альянса</span><span class="status">👑 на Королеве</span></div>
+          </div>
+        </div>
       </figure>
       <div class="reveal d1">
         <div class="eyebrow gold">Наставник</div>
@@ -554,7 +591,7 @@
             <p>Недавно базовый курс прошла основная группа — и все они большие молодцы. Гордимся каждым. Следующий поток — твой?</p>
           </div>
         </div>
-        <p class="donate">☕ <span>Обучение бесплатное. Но если захочется сказать спасибо — можно закинуть May на еду: Богини тоже едят. <a href="https://t.me/battleshiptrader" target="_blank" rel="noopener">Спросить, куда</a>.</span></p>
+        <p class="donate">☕ <span>Обучение бесплатное. Но если захочется сказать спасибо — можно закинуть May на еду: Богини тоже едят. <a href="#donation">На еду May</a>.</span></p>
       </div>
     </div>
   </div>
@@ -627,6 +664,17 @@
     </div>
   </div>
 </section>
+
+<style>
+.tools-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:24px;margin-top:30px}.tool-panel{padding:30px;border:1px solid var(--line-strong);border-radius:20px;background:linear-gradient(135deg,#151b1a,#0d1014)}.tool-panel h3{font:28px var(--font-display);color:var(--gold-2);margin-bottom:14px}.tool-panel p{color:var(--muted);margin:10px 0}.tool-panel label{display:block;margin:15px 0 6px}.tool-panel input:not([type=checkbox]),.tool-panel select,.tool-panel textarea{width:100%;padding:12px;background:#090d10;border:1px solid #536058;border-radius:9px;color:var(--text);font:inherit}.tool-panel button,.event-tabs button{background:#d9b35c;color:#131810;border:0;border-radius:8px;padding:12px 18px;cursor:pointer;font:600 14px var(--font-body);margin:8px 6px 8px 0}.tool-panel button:disabled{opacity:.4;cursor:default}.event-tabs button[aria-pressed=false]{background:#202724;color:#c9cecb}.event-list{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;margin-top:24px}.event{padding:23px;border:1px solid #34443a;background:#111916;border-radius:15px}.event h3{font:23px var(--font-display);margin:10px 0;color:#ece3c9}.event small,.event p{color:#a1aea5}.event time{display:block;color:var(--gold-2);font-variant-numeric:tabular-nums;margin-top:12px}.event.live{border-color:#3ccd82}.event.live small{color:#7be6ad}.schedule-note{padding:18px;border-left:2px solid var(--gold);margin:24px 0;color:var(--muted)}.quiz-option{display:block!important;width:100%;text-align:left;background:#202c25!important;color:#e9e6dd!important;border:1px solid #405246!important}.result-title{font:32px var(--font-display);color:var(--gold-2)}.birthday-cake{position:absolute;top:-42px;right:-15px;font-size:80px;filter:drop-shadow(0 5px 15px #000);z-index:5;pointer-events:none}.rat-squeak{cursor:pointer;border:1px solid var(--gold)!important;color:inherit;font:inherit}.phone-number{font:clamp(23px,4vw,32px) var(--font-display);color:var(--gold-2)!important}.privacy-note{font-size:12px;color:var(--muted)}#certificatePreview{width:100%;margin-top:15px;border-radius:8px}a:focus-visible,button:focus-visible{outline:2px solid #7be6ad;outline-offset:4px}@media(max-width:800px){.event-list{grid-template-columns:repeat(2,minmax(0,1fr))}.tools-grid{grid-template-columns:1fr}}@media(max-width:500px){.event-list{grid-template-columns:1fr}.tool-panel{padding:20px}}
+</style>
+<section class="section" id="schedule"><div class="container"><div class="eyebrow gold">Сервер 238 · Московское время</div><h2>Сначала ивент. <span>Потом вопросы.</span></h2><p class="lead">Дежурная доска альянса. Часы здесь всегда по МСК, даже если ты далеко от дома.</p><p id="moscowClock" class="schedule-note"></p><div class="event-tabs" role="group" aria-label="События"><button type="button" data-filter="next" aria-pressed="true">Сейчас и ближайшее</button><button type="button" data-filter="week" aria-pressed="false">Ближайшие 7 дней</button></div><div id="eventList" class="event-list"></div><noscript>Для живого расписания включите JavaScript.</noscript><p class="schedule-note">Ловушка — обычно через день; в воскресенье Долины дневной запуск переносится с 14:00 на 14:30. Время запуска может менять руководство. Захват замка сайт не отслеживает: после начала таких событий показывается «уточните в игре». Осада нежити не имеет точного таймера: ориентир 2–2,5 дня после фактического запуска.</p><details><summary>Правила расписания и исходные даты</summary><p>Дуэль: понедельник 05:00 → воскресенье 05:00. Ловушка: через день от 27.09.2026, в 14:00 и 22:00; длительность не задана. Долина: через воскресенье от 27.09.2026, 07:00–07:30, 14:00–14:30, 23:00–23:30. Каньон: через неделю от 28.09.2026, понедельник 05:00 → воскресенье 05:00. По пятницам: эликсир 14:00 и 23:00, примерно по 30 минут; переполох с 17:00, набив очков до 17:30, затем до захвата. По субботам: война с 17:00 до захвата. Последняя известная Осада: 27.09.2026, 17:00.</p></details></div></section>
+<section class="section" id="academy-tools"><div class="container"><div class="eyebrow gold">Канцелярия Богини</div><h2>Твоя крысиная <span>история успеха.</span></h2><div class="tools-grid">
+<div class="tool-panel" id="ratQuiz"><h3>🐀 Какая ты крыса?</h3><p>Пять вопросов. Ни одной научной претензии. May всё равно уже знает ответ.</p><div id="quizBody"></div><div id="quizResult" aria-live="polite"></div></div>
+<div class="tool-panel"><h3>Печать самостоятельности</h3><p>Именной шуточный сертификат. Выдаётся браузером, а не по результатам аттестации у May.</p><label for="graduateName">Игровой ник</label><input id="graduateName" maxlength="32" placeholder="Например, Гроза караванов"><label for="graduateTier">Ступень</label><select id="graduateTier"><option>Я родился</option><option>Не будь фермой</option><option selected>Теперь я самостоятельная</option></select><button id="makeCertificate" type="button">Выписать сертификат</button><a id="saveCertificate" download="certificate-may.png" hidden>↓ Скачать PNG</a><canvas id="certificatePreview" width="1600" height="1000" hidden aria-label="Предпросмотр сертификата"></canvas><p id="certificateMessage" role="status"></p></div>
+<div class="tool-panel" id="enroll"><h3>Записаться к May</h3><p>Принесите ник, вопрос и остатки самообладания.</p><form action="https://formsubmit.co/trka86@gmail.com" method="POST"><input type="hidden" name="_subject" value="Академия May • новая заявка • сервер 238"><input type="hidden" name="_template" value="table"><input type="text" name="_honey" tabindex="-1" autocomplete="off" style="display:none" aria-hidden="true"><label for="appNick">Игровой ник</label><input id="appNick" name="Ник" required maxlength="60" autocomplete="nickname"><label for="appContact">Telegram или email для ответа</label><input id="appContact" name="Контакт" required maxlength="120" placeholder="@username или email"><label for="appTier">Ступень</label><select id="appTier" name="Ступень"><option>Я родился</option><option>Не будь фермой</option><option>Теперь я самостоятельная</option></select><label for="appQuestion">Что хочешь разобрать?</label><textarea id="appQuestion" name="Вопрос" rows="3" maxlength="2000"></textarea><label class="privacy-note"><input type="checkbox" required> Согласен передать указанные данные May и сервису FormSubmit для обработки заявки. Не отправляю пароли или платёжные данные.</label><button type="submit">Отправить заявку →</button><p class="privacy-note">Откроется FormSubmit: может потребоваться CAPTCHA. Доставка работает после активации адреса владельцем. Если ответа нет — <a href="https://t.me/battleshiptrader" target="_blank" rel="noopener">написать May в Telegram</a>.</p></form></div>
+<div class="tool-panel" id="donation"><div class="eyebrow gold">Добровольное подношение</div><h3>На еду May. И тёплый чай.</h3><p>Обучение бесплатное. Благодарность — по желанию. Ни размер нимба, ни очередь на ответы от суммы не зависят.</p><p class="phone-number">+7 921 794-39-70</p><button type="button" id="copyPhone">Скопировать номер</button><p id="copyStatus" role="status"></p><p>Перевод по номеру телефона в приложении банка. Банк и имя получателя <a href="https://t.me/battleshiptrader" target="_blank" rel="noopener">уточните у May</a> перед отправкой.</p><p class="privacy-note">Платёжного QR пока нет — добавим официальный QR банка, чтобы деньги не ушли не той Богине.</p></div>
+</div><p class="privacy-note" style="margin-top:24px">Аналитика: на опубликованном сайте используется Яндекс.Метрика (включая Вебвизор) для анализа посещений и взаимодействий. Поля заявки исключены из записи Вебвизором. Отправка формы передаёт данные стороннему сервису FormSubmit.</p></div></section>
 
 <!-- ================= FAQ ================= -->
 <section class="section" id="faq">
@@ -707,6 +755,51 @@
     });
     n.querySelectorAll('a').forEach(function(a){a.addEventListener('click',function(){n.classList.remove('open');b.setAttribute('aria-expanded','false');});});
   })();
+  // двусторонний портрет May: наклон у краёв, переворот по клику на край
+  (function(){
+    var fig=document.getElementById('mayFigure'),el=document.getElementById('mayFlip');
+    if(!fig||!el)return;
+    var EDGE=.26, angle=0, flipped=false, flips=0;
+    var touch=window.matchMedia&&window.matchMedia('(hover: none)').matches;
+    function zone(e){
+      var r=el.getBoundingClientRect();
+      var x=(e.clientX-r.left)/r.width, y=(e.clientY-r.top)/r.height;
+      var m=Math.min(x,1-x,y,1-y);
+      if(m>EDGE||m<0)return null;
+      var edge=(m===x)?'left':(m===1-x)?'right':(m===y)?'top':'bottom';
+      return {edge:edge,x:x,y:y,k:1-m/EDGE};
+    }
+    function apply(ty,tx){el.style.transform='rotateX('+tx+'deg) rotateY('+(angle+ty)+'deg)';}
+    function rest(){el.classList.remove('arming');fig.classList.remove('arming');el.removeAttribute('data-edge');apply(0,0);}
+    function doFlip(dir){
+      angle+=180*dir;flipped=!flipped;
+      flips++;
+      if(flips===14){var cake=document.createElement('span');cake.className='birthday-cake';cake.textContent='🎂';cake.setAttribute('role','img');cake.setAttribute('aria-label','Торт именинницы May');fig.appendChild(cake);}
+      el.setAttribute('aria-pressed',flipped?'true':'false');
+      el.querySelector('.front').setAttribute('aria-hidden',flipped?'true':'false');
+      el.querySelector('.back').setAttribute('aria-hidden',flipped?'false':'true');
+      rest();
+    }
+    if(!touch){
+      el.addEventListener('pointermove',function(e){
+        var z=zone(e);
+        if(!z){rest();return;}
+        el.classList.add('arming');fig.classList.add('arming');el.setAttribute('data-edge',z.edge);
+        var ty=0,tx=0;
+        if(z.edge==='left')ty=-16*z.k;else if(z.edge==='right')ty=16*z.k;else if(z.edge==='top')tx=12*z.k;else tx=-12*z.k;
+        apply(ty,tx);
+      });
+      el.addEventListener('pointerleave',rest);
+    }
+    el.addEventListener('click',function(e){
+      var z=zone(e);
+      if(!z&&!touch)return;                      // центр на десктопе — не переворачивает
+      doFlip((z&&z.x<.5)?-1:1);                  // левый край — влево, правый — вправо
+    });
+    el.addEventListener('keydown',function(e){
+      if(e.key==='Enter'||e.key===' '){e.preventDefault();doFlip(1);}
+    });
+  })();
   // reveal on scroll
   (function(){
     var els=document.querySelectorAll('.reveal');
@@ -717,5 +810,44 @@
     els.forEach(function(e){io.observe(e)});
   })();
 </script>
+<script>// Расписание: все даты рассчитываются в UTC+3 независимо от часового пояса устройства.
+const DAY=86400000, HOUR=3600000;
+const SCHEDULE={trapAnchor:'2026-09-27',valleyAnchor:'2026-09-27',canyonAnchor:'2026-09-28',siegeLast:'2026-09-27T17:00:00+03:00'};
+function mskDate(day,h=0,m=0){return Date.parse(day+'T'+String(h).padStart(2,'0')+':'+String(m).padStart(2,'0')+':00+03:00');}
+function eventsAround(now){const dayStr=new Date(now+3*HOUR).toISOString().slice(0,10),base=mskDate(dayStr),events=[];
+ function add(name,start,end,note='',kind='fixed'){events.push({name,start,end,note,kind});}
+ for(let i=-7;i<=15;i++){const d=base+i*DAY, dow=new Date(d+3*HOUR).getUTCDay(),td=Math.round((d-mskDate(SCHEDULE.trapAnchor))/DAY),vd=Math.round((d-mskDate(SCHEDULE.valleyAnchor))/DAY),cd=Math.round((d-mskDate(SCHEDULE.canyonAnchor))/DAY),valley=dow===0&&vd%14===0;
+ if(dow===1){add('Дуэль Альянсов',d+5*HOUR,d+6*DAY+5*HOUR,'Шесть дней, чтобы доказать: мы не ферма.');if(cd%14===0)add('Каньон',d+5*HOUR,d+6*DAY+5*HOUR,'Неделя Каньона.');}
+ if(td%2===0){add('Ловушка',d+(valley?14.5:14)*HOUR,null,valley?'После дневной Долины · обычный план':'Обычный план · запуск уточните в чате','launch');add('Ловушка',d+22*HOUR,null,'Обычный план · запуск уточните в чате','launch');}
+ if(valley)for(const h of [7,14,23])add('Долина кристалльных скоплений',d+h*HOUR,d+(h+.5)*HOUR,'Три захода за воскресенье.');
+ if(dow===5){for(const h of [14,23])add('Битва за эликсир',d+h*HOUR,d+(h+.5)*HOUR,'Длительность примерно 30 минут.');add('Королевский переполох',d+17*HOUR,null,'17:00–17:30 — набив очков; затем до захвата замка.','castle');}
+ if(dow===6)add('Война королевств',d+17*HOUR,null,'До захвата замка. Время окончания неизвестно.','castle');
+ }return events.sort((a,b)=>a.start-b.start);}
+function duration(ms){let s=Math.max(0,Math.floor(ms/1000));return (s>=86400?Math.floor(s/86400)+' д ': '')+String(Math.floor(s/3600)%24).padStart(2,'0')+':'+String(Math.floor(s/60)%60).padStart(2,'0')+':'+String(s%60).padStart(2,'0');}
+const dateFmt=new Intl.DateTimeFormat('ru-RU',{timeZone:'Europe/Moscow',day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
+let eventFilter='next';
+function renderSchedule(now=Date.now()){
+ document.getElementById('moscowClock').textContent='Сейчас по МСК: '+new Intl.DateTimeFormat('ru-RU',{timeZone:'Europe/Moscow',weekday:'long',day:'numeric',month:'long',hour:'2-digit',minute:'2-digit',second:'2-digit'}).format(now);
+ let all=eventsAround(now).filter(e=>e.end?e.end>now:e.start>now-HOUR*(e.kind==='castle'?12:1));
+ if(eventFilter==='week')all=all.filter(e=>e.start<now+7*DAY);else {const seen=new Set();all=all.filter(e=>{if(seen.has(e.name))return false;seen.add(e.name);return true;});}
+ document.getElementById('eventList').innerHTML=all.map(e=>{const started=e.start<=now,live=started&&e.end,status=!started?'До начала '+duration(e.start-now):live?'До окончания '+duration(e.end-now):'По расписанию уже началось · уточните в игре';return '<article class="event '+(live?'live':'')+'"><small>'+(!started?'БЛИЖАЙШИЙ ЗАПУСК':live?'СЕЙЧАС ИДЁТ':'СТАТУС НЕ ПОДТВЕРЖДЁН')+'</small><h3>'+e.name+'</h3><p>'+dateFmt.format(e.start)+(e.end?' → '+dateFmt.format(e.end):'')+' МСК</p><time>'+status+'</time><p>'+e.note+'</p></article>';}).join('');
+ const last=Date.parse(SCHEDULE.siegeLast),a=last+2*DAY,b=last+2.5*DAY;document.getElementById('eventList').innerHTML+='<article class="event"><small>ОРИЕНТИРОВОЧНО · РУЧНОЙ ЗАПУСК</small><h3>Осада нежити</h3><p>Последний известный запуск: '+dateFmt.format(last)+' МСК</p><time>'+(now<a?'До ранней границы окна '+duration(a-now):now<=b?'Ожидаем запуск по возможности':'Данные устарели — уточните следующий запуск')+'</time><p>Ориентир: '+dateFmt.format(a)+' — '+dateFmt.format(b)+' МСК. Не подтверждённое событие; автоматически дальше не повторяется.</p></article>';
+}
+document.querySelectorAll('[data-filter]').forEach(b=>b.onclick=()=>{eventFilter=b.dataset.filter;document.querySelectorAll('[data-filter]').forEach(x=>x.setAttribute('aria-pressed',String(x===b)));renderSchedule();});renderSchedule();setInterval(()=>renderSchedule(),1000);
+const questions=[['May на Королеве. Твой ход?','Напишу ещё раз. Вдруг не заметила?','Сначала спрошу в чате','Посмотрю гайд и соберу вопросы'],['Караван уехал не туда.','Это судьба. И May виновата','Проверю маршрут на следующий раз','Разберу ошибку и помогу остальным'],['До ивента десять минут.','Какого ивента?','Уточню время и подготовлюсь','Уже готовлю отряд и напоминаю чату'],['Тебя накрыл тильт.','Иду в чат с капслоком','Сделаю паузу и выпью воды','Остыну, потом спокойно разберу бой'],['Базовый курс завершён.','А где кнопка «всё за меня»?','Потренируюсь по чек-листу','Теперь я самостоятельная. И чай заварю.']];
+let qi=0,score=0;function quiz(){const body=document.getElementById('quizBody');document.getElementById('quizResult').textContent='';if(qi===questions.length){body.innerHTML='<button type="button" id="retryQuiz">Пройти ещё раз</button>';const results=score<4?['Крыса-почемучка','Любопытства — на целый альянс. Начни со ступени «Я родился»: вопросы превратятся в уверенность.']:score<8?['Крыса-тактик','Ты уже ищешь ответы до сообщения May. Твоя ступень — «Не будь фермой».']:['Крыса-легенда','Ты готовишься, проверяешь и помогаешь другим. «Теперь я самостоятельная» — твой девиз.'];const r=document.getElementById('quizResult');const h=document.createElement('h4');h.className='result-title';h.textContent=results[0];const p=document.createElement('p');p.textContent=results[1]+' Шуточный результат, не экзамен.';r.append(h,p);document.getElementById('retryQuiz').onclick=()=>{qi=0;score=0;quiz();};return;}body.innerHTML='<p>Вопрос '+(qi+1)+' / 5</p><h4>'+questions[qi][0]+'</h4>';questions[qi].slice(1).forEach((a,i)=>{const b=document.createElement('button');b.type='button';b.className='quiz-option';b.textContent=a;b.onclick=()=>{score+=i;qi++;quiz();};body.append(b);});}quiz();
+document.getElementById('makeCertificate').onclick=()=>{const name=document.getElementById('graduateName').value.trim();if(!name){document.getElementById('certificateMessage').textContent='Впиши игровой ник — печать не любит пустоту.';return;}const c=document.getElementById('certificatePreview'),x=c.getContext('2d');x.fillStyle='#0d1513';x.fillRect(0,0,1600,1000);x.strokeStyle='#d9b35c';x.lineWidth=3;x.strokeRect(40,40,1520,920);x.lineWidth=1;x.strokeRect(55,55,1490,890);x.textAlign='center';function text(t,y,size,color='#eed9a6'){x.fillStyle=color;x.font=size+'px Georgia';x.fillText(t,800,y,1390);}text('АКАДЕМИЯ MAY • СЕРВЕР 238',155,30);text('Сертификат выпускника',285,72);text(name,440,80,'#ffffff');text('торжественно получает звание',535,30);text('«'+document.getElementById('graduateTier').value+'»',620,56);text('May · Богиня Альянса',780,38);text('Чай остыл. Знания остались.',839,25);text('Шуточный сертификат • '+new Intl.DateTimeFormat('ru-RU',{timeZone:'Europe/Moscow'}).format(new Date()),905,21,'#98aaa1');c.hidden=false;const a=document.getElementById('saveCertificate');a.href=c.toDataURL('image/png');a.hidden=false;document.getElementById('certificateMessage').textContent='Готово. Скачай и предъяви своей внутренней ферме.';};
+document.getElementById('copyPhone').onclick=async()=>{const s=document.getElementById('copyStatus');try{await navigator.clipboard.writeText('+79217943970');s.textContent='Номер скопирован. Тёплый чай стал ближе.';}catch(e){s.textContent='Скопируйте вручную: +79217943970';}};
+document.querySelectorAll('#enroll input,#enroll textarea,#enroll select').forEach(e=>e.classList.add('ym-disable-keys'));
+const rat=document.querySelector('.reviews .avatar');if(rat){rat.setAttribute('role','button');rat.tabIndex=0;rat.setAttribute('aria-label','Пискнуть крыской');rat.classList.add('rat-squeak');function squeak(){try{const ac=new(window.AudioContext||window.webkitAudioContext)();ac.resume();const o=ac.createOscillator(),g=ac.createGain();o.type='sine';o.frequency.setValueAtTime(2600,ac.currentTime);o.frequency.exponentialRampToValueAtTime(4100,ac.currentTime+.06);o.frequency.exponentialRampToValueAtTime(1900,ac.currentTime+.19);g.gain.setValueAtTime(.0001,ac.currentTime);g.gain.exponentialRampToValueAtTime(.07,ac.currentTime+.02);g.gain.exponentialRampToValueAtTime(.0001,ac.currentTime+.22);o.connect(g);g.connect(ac.destination);o.start();o.stop(ac.currentTime+.24);o.onended=()=>ac.close();}catch(e){}}rat.onclick=squeak;rat.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();squeak();}};}
+</script>
+<!-- Yandex.Metrika counter -->
+<script type="text/javascript">
+(function(m,e,t,r,i,k,a){m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};m[i].l=1*new Date();for(var j=0;j<document.scripts.length;j++){if(document.scripts[j].src===r){return;}}k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)})(window,document,'script','https://mc.yandex.ru/metrika/tag.js?id=113106812','ym');
+ym(113106812,'init',{ssr:true,webvisor:true,clickmap:true,ecommerce:"dataLayer",referrer:document.referrer,url:location.href,accurateTrackBounce:true,trackLinks:true});
+</script>
+<noscript><div><img src="https://mc.yandex.ru/watch/113106812" style="position:absolute;left:-9999px;" alt=""></div></noscript>
+<!-- /Yandex.Metrika counter -->
+
 </body>
 </html>
