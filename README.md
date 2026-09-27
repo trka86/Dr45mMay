@@ -8,6 +8,7 @@
 |---|---|
 | `index.html` | сама страница (все тексты — внутри него) |
 | `hero.jpg`, `may.jpg`, `may-back.jpg`, `hotline.jpg` | иллюстрации (`may-back.jpg` — оборотная сторона портрета) |
+| `donation-qr.png` | банковский QR в оформлении академии |
 | `og-image.jpg` | картинка-превью для ссылок в Telegram / VK (2400×1260) |
 | `favicon.svg`, `favicon.ico`, `apple-touch-icon.png` | иконка сайта во вкладке и на рабочем столе телефона |
 
